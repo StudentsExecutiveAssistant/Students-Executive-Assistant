@@ -17,17 +17,16 @@ async def start_web_server():
     runner = web.AppRunner(app)
     await runner.setup()
     
-    # Render передає порт через змінну середовища PORT, за замовчуванням беремо 8080
     port = int(os.environ.get("PORT", 8080))
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     print(f"Dummy web server started on port {port}")
 
 async def main_wrapper():
-    # Запускаємо одночасно вебсервер для Render та самого бота
+    # Запускаємо вебсервер і асинхронну функцію main() в одному головному потоці
     await asyncio.gather(
         start_web_server(),
-        run() if asyncio.iscoroutinefunction(run) else asyncio.to_thread(run)
+        main()
     )
 
 if __name__ == "__main__":
