@@ -1,4 +1,5 @@
 """Стани FSM та спільний екземпляр роутера Telegram-бота."""
+
 from __future__ import annotations
 
 from aiogram import Router
@@ -8,6 +9,6 @@ router = Router()
 
 
 class Form(StatesGroup):
-    filling = State()
-    confirm = State()
-    adding_admin = State()
+	filling = State()
+	confirm = State()
+	adding_admin = State()
