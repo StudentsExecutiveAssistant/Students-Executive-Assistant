@@ -21,7 +21,7 @@ class StaleGuard(BaseMiddleware):
 		data: dict[str, Any],
 	) -> Any:
 		if isinstance(event, CallbackQuery) and not (event.data or "").startswith(
-			("menu", "cat:", "tpl:", "adm:")
+			("menu", "cat:", "tpl:", "adm:", "fb:", "pet:")
 		):
 			state = data.get("state")
 			mid = (await state.get_data()).get("mid") if state else None

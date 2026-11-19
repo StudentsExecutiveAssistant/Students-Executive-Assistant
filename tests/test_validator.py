@@ -6,6 +6,7 @@ from app.core import dates, templates
 from app.docx import builder, validator
 from tests.helpers import (
 	REF_TODAY,
+	STUDS_IARD_4,
 	STUDS_IBIB_4,
 	absence_answers,
 	assert_clean_check,
@@ -142,6 +143,57 @@ def test_text_issues_diagnostics() -> None:
 	eq_lis_rep = "\n".join(validator.check_docx(eq_lis_data, today=REF_TODAY))
 	assert "Немає шапки" not in eq_lis_rep and "ЕРДТ" not in eq_lis_rep, eq_lis_rep
 	assert "❌" not in eq_lis_rep and "⚠️" not in eq_lis_rep, eq_lis_rep
+
+	# Інтерактивна дошка без підпису ЕРДТ має попереджати про відсутній підпис.
+	board_spec = make_spec(
+		"equipment",
+		{
+			"items": "інтерактивної дошки",
+			"place": "в актовій залі навчального корпусу №1",
+			"date": "26 листопада 2026 року",
+			"_dates": [["2026-11-26", "2026-11-26"]],
+			"time": "з 15:00 год до 18:00 год",
+			"_time": [900, 1080],
+			"purpose": "проведення воркшопу",
+			"responsible": "Голова Колегії – Петренко Петро",
+			"_resp_n": 1,
+		},
+	)
+	board_no_tutor = {**board_spec, "signers": ["profkom", "kolehiia"]}
+	board_rep = "\n".join(
+		validator.check_docx(builder.build_docx([board_no_tutor]), today=REF_TODAY)
+	)
+	assert "Не бачу підпису з прізвищем ЕРДТ" in board_rep, board_rep
+
+	# Інтерактивні стійки не повинні вимагати підпис ЕРДТ.
+	stands_spec = make_spec(
+		"placing",
+		{
+			"where": "в холі головного навчального корпусу",
+			"what": "інтерактивних стійок",
+			"date": "26 листопада 2026 року",
+			"_dates": [["2026-11-26", "2026-11-26"]],
+			"time": "з 10:00 год до 18:00 год",
+			"_time": [600, 1080],
+			"purpose": "проведення промоакції",
+			"responsible": "Голова Колегії – Петренко Петро",
+			"_resp_n": 1,
+		},
+	)
+	stands_rep = "\n".join(
+		validator.check_docx(builder.build_docx([stands_spec]), today=REF_TODAY)
+	)
+	assert "ЕРДТ" not in stands_rep, stands_rep
+
+	# Шапка з «Директорці» розпізнається коректно.
+	iard_spec = make_spec(
+		"absence",
+		absence_answers("ІАРД", STUDS_IARD_4, in_appendix="У тексті (на одному аркуші)"),
+	)
+	iard_rep = "\n".join(
+		validator.check_docx(builder.build_docx([iard_spec]), today=REF_TODAY)
+	)
+	assert "Немає шапки" not in iard_rep and "❌" not in iard_rep, iard_rep
 
 	bad_range_spec = make_spec(
 		"rooms",

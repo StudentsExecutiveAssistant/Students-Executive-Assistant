@@ -15,7 +15,9 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app import config
+from app.bot.handlers.feedback import release_admin_ticket
 from app.bot.handlers.form import ask
+from app.bot.handlers.petitions import release_admin_petition
 from app.bot.handlers.shared import drop_kb
 from app.bot.keyboards import category_kb, main_menu
 from app.bot.states import Form, router
@@ -26,7 +28,7 @@ from app.docx.validator import check_docx
 logger = logging.getLogger(__name__)
 
 _ADDR_NOTE = {
-	"equipment": " (для приміщення L.I.S. – центр тьюторства)",
+	"equipment": " (для приміщення L.I.S. – центр тьюторства; інтерактивна дошка – Логойда + підпис ЕРДТ)",
 }
 
 
@@ -34,7 +36,7 @@ def _addr_hint(tpl: Template) -> str:
 	if len(tpl.addressees) > 1:
 		return "обираєте нижче"
 	base = (
-		"директор обраного інституту"
+		"директор / директорка обраного інституту"
 		if tpl.addressees[0] == "institute"
 		else addressee_label(tpl.addressees[0])
 	)
@@ -80,8 +82,16 @@ async def _require_admin_cb(c: CallbackQuery) -> bool:
 	return False
 
 
+async def _release_admin_locks(bot: Bot | None, admin_id: int) -> tuple[bool, bool]:
+	fb = await release_admin_ticket(bot, admin_id)
+	pet = await release_admin_petition(bot, admin_id)
+	return fb, pet
+
+
 @router.message(CommandStart())
 async def start(m: Message, state: FSMContext) -> None:
+	if m.from_user:
+		await _release_admin_locks(m.bot, m.from_user.id)
 	d = await state.get_data()
 	await drop_kb(m.bot, m.chat.id, d.get("mid"))
 	await state.clear()
@@ -93,6 +103,8 @@ async def start(m: Message, state: FSMContext) -> None:
 
 @router.message(Command("new"))
 async def new(m: Message, state: FSMContext) -> None:
+	if m.from_user:
+		await _release_admin_locks(m.bot, m.from_user.id)
 	d = await state.get_data()
 	await drop_kb(m.bot, m.chat.id, d.get("mid"))
 	await state.clear()
@@ -103,6 +115,8 @@ async def new(m: Message, state: FSMContext) -> None:
 async def admins_cmd(m: Message, state: FSMContext) -> None:
 	if not await _require_admin_msg(m, state):
 		return
+	if m.from_user:
+		await _release_admin_locks(m.bot, m.from_user.id)
 	await state.clear()
 	text, kb = _admins_view()
 	await m.answer(text, reply_markup=kb)
@@ -112,6 +126,7 @@ async def admins_cmd(m: Message, state: FSMContext) -> None:
 async def adm_list_cb(c: CallbackQuery, state: FSMContext) -> None:
 	if not await _require_admin_cb(c):
 		return
+	await _release_admin_locks(c.bot, c.from_user.id)
 	await state.clear()
 	text, kb = _admins_view()
 	await c.answer()
@@ -123,6 +138,7 @@ async def adm_list_cb(c: CallbackQuery, state: FSMContext) -> None:
 async def adm_add_cb(c: CallbackQuery, state: FSMContext) -> None:
 	if not await _require_admin_cb(c):
 		return
+	await _release_admin_locks(c.bot, c.from_user.id)
 	await state.set_state(Form.adding_admin)
 	b = InlineKeyboardBuilder()
 	b.button(text="⬅️ Назад", callback_data="adm:list")
@@ -143,6 +159,7 @@ async def adm_del_cb(c: CallbackQuery) -> None:
 		return
 	uid = int(c.data.split(":")[2])
 	config.remove_admin_id(uid)
+	await _release_admin_locks(c.bot, uid)
 	text, kb = _admins_view()
 	await c.answer("Адміна видалено")
 	if isinstance(c.message, Message):
@@ -172,6 +189,7 @@ async def help_(m: Message) -> None:
 	lines = [
 		"/new – нове клопотання",
 		"/check – перевірити готовий .docx",
+		"/feedback – надіслати фідбек",
 		"/cancel – скасувати",
 		"",
 		"Кілька клопотань можна зібрати в один файл: «➕ Додати ще в цей файл».",
@@ -193,10 +211,18 @@ async def check_cmd(m: Message) -> None:
 
 @router.message(Command("cancel"))
 async def cancel_cmd(m: Message, state: FSMContext) -> None:
+	released_fb, released_pet = (
+		await _release_admin_locks(m.bot, m.from_user.id) if m.from_user else (False, False)
+	)
 	d = await state.get_data()
 	await drop_kb(m.bot, m.chat.id, d.get("mid"))
 	await state.clear()
-	await m.answer("Скасовано. /new – почати знову.")
+	if released_fb:
+		await m.answer("Скасовано. Фідбек повернуто іншим адміністраторам.")
+	elif released_pet:
+		await m.answer("Скасовано. Клопотання повернуто іншим адміністраторам.")
+	else:
+		await m.answer("Скасовано. /new – почати знову.")
 
 
 @router.callback_query(F.data.startswith("cat:"))
@@ -227,6 +253,7 @@ async def pick_template(c: CallbackQuery, state: FSMContext) -> None:
 	if tpl_id not in TEMPLATES:
 		await c.answer("Шаблон не знайдено", show_alert=True)
 		return
+	await _release_admin_locks(c.bot, c.from_user.id)
 	old = await state.get_data()
 	if isinstance(c.message, Message) and c.message.message_id != old.get("mid"):
 		await drop_kb(c.bot, c.message.chat.id, c.message.message_id)

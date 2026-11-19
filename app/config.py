@@ -107,18 +107,24 @@ def _load_responsibles() -> tuple[str, dict[str, list[dict[str, Any]]]]:
 
 
 def _load_institutes() -> tuple[
-	str, set[str], dict[str, tuple[str, str]], dict[str, list[tuple[str, ...]]]
+	str,
+	set[str],
+	dict[str, tuple[str, str]],
+	dict[str, str],
+	dict[str, list[tuple[str, ...]]],
 ]:
 	raw = _read_json("institutes.json")
 	unit = str(raw.get("unit", ""))
 	legacy = {str(x) for x in raw.get("legacy_codes", [])}
 	institutes: dict[str, tuple[str, str]] = {}
+	inst_titles: dict[str, str] = {}
 	inst_people: dict[str, list[tuple[str, ...]]] = {}
 	for code, info in raw.get("institutes", {}).items():
 		institutes[code] = (str(info["name"]), str(info["director"]))
+		inst_titles[code] = str(info.get("director_title") or "Директору")
 		people_tuples = [tuple(str(x) for x in p) for p in info.get("people", [])]
 		inst_people[code] = list(dict.fromkeys(people_tuples))
-	return unit, legacy, institutes, inst_people
+	return unit, legacy, institutes, inst_titles, inst_people
 
 
 def _load_places() -> dict[str, list[str]]:
@@ -132,7 +138,9 @@ def _load_places() -> dict[str, list[str]]:
 
 UNIVERSITY, SIGNERS, ADDRESSEES = _load_officials()
 ORG_UNIT, RESPONSIBLES = _load_responsibles()
-INSTITUTE_UNIT, LEGACY_INSTITUTES, INSTITUTES, INSTITUTE_PEOPLE = _load_institutes()
+INSTITUTE_UNIT, LEGACY_INSTITUTES, INSTITUTES, INSTITUTE_TITLES, INSTITUTE_PEOPLE = (
+	_load_institutes()
+)
 
 _PLACES = _load_places()
 ROOMS: list[str] = _PLACES.get("rooms", [])

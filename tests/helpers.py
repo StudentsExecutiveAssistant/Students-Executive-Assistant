@@ -154,6 +154,7 @@ def make_fake_bot_harness(start_mid: int = 100) -> tuple[Any, ...]:
 	from aiogram.fsm.storage.memory import MemoryStorage
 	from aiogram.methods import (
 		AnswerCallbackQuery,
+		EditMessageCaption,
 		EditMessageReplyMarkup,
 		EditMessageText,
 		SendDocument,
@@ -209,14 +210,34 @@ def make_fake_bot_harness(start_mid: int = 100) -> tuple[Any, ...]:
 					text=method.text,
 					reply_markup=markup,
 				)
+			if isinstance(method, EditMessageCaption):
+				assert method.message_id is not None and method.chat_id is not None
+				markup = (
+					method.reply_markup
+					if isinstance(method.reply_markup, InlineKeyboardMarkup)
+					else None
+				)
+				return Message(
+					message_id=int(method.message_id),
+					date=datetime.now(UTC),
+					chat=Chat(id=int(method.chat_id), type="private"),
+					caption=method.caption,
+					reply_markup=markup,
+				)
 			if isinstance(method, SendDocument):
 				assert method.chat_id is not None
 				self.next_mid += 1
+				markup = (
+					method.reply_markup
+					if isinstance(method.reply_markup, InlineKeyboardMarkup)
+					else None
+				)
 				return Message(
 					message_id=self.next_mid,
 					date=datetime.now(UTC),
 					chat=Chat(id=int(method.chat_id), type="private"),
 					caption=method.caption,
+					reply_markup=markup,
 				)
 			return True
 

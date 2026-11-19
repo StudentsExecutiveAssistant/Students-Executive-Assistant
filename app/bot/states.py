@@ -12,3 +12,6 @@ class Form(StatesGroup):
 	filling = State()
 	confirm = State()
 	adding_admin = State()
+	feedback = State()
+	feedback_reply = State()
+	petition_reject = State()

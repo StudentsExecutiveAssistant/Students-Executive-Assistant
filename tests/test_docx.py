@@ -33,10 +33,14 @@ def main() -> None:
 		test_absence_thresholds_in_memory,
 		test_audience_weekdays_and_purchase_fund_in_memory,
 		test_config_and_award_in_memory,
+		test_female_director_titles_in_memory,
+		test_interactive_board_addressee_and_signer_in_memory,
 		test_photo_templates_in_memory,
 		test_sport_inventory_in_memory,
 		test_with_appendix_num_and_batch_in_memory,
 	)
+	from tests.test_feedback import test_feedback_flow_in_memory
+	from tests.test_petitions import test_petition_review_buttons_flow_in_memory
 	from tests.test_validator import (
 		test_text_issues_diagnostics,
 		test_timed_templates_and_checker_in_memory,
@@ -52,12 +56,16 @@ def main() -> None:
 	test_sport_inventory_in_memory()
 	test_config_and_award_in_memory()
 	test_audience_weekdays_and_purchase_fund_in_memory()
+	test_female_director_titles_in_memory()
+	test_interactive_board_addressee_and_signer_in_memory()
 	test_timed_templates_and_checker_in_memory()
 	test_text_issues_diagnostics()
 	test_bot_dmode_flow_in_memory()
 	test_dlya_parsing_and_resp_badges_in_memory()
 	test_parse_user_ids()
 	test_admin_flow_in_memory()
+	test_feedback_flow_in_memory()
+	test_petition_review_buttons_flow_in_memory()
 
 	outputs = {
 		OUT_DIR / "01_rooms_ntb.docx": _sample_rooms_ntb(),

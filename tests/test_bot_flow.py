@@ -15,6 +15,7 @@ from aiogram.types import BufferedInputFile, InlineKeyboardMarkup
 
 from app import bot as bot_mod
 from app import config
+from app.bot.handlers import petitions as pet_mod
 from app.core.cleaners import parse_user_ids
 from tests.helpers import (
 	BEST_REASON,
@@ -534,6 +535,7 @@ def test_admin_flow_in_memory() -> None:
 				await tap_as(u, ch, "make", await state_mid(u.id))
 
 			try:
+				pet_mod.reset_reviews()
 				await send_as(stud_user, stud_chat, "/start")
 				assert "/admins" not in rendered_text_for(student_uid)
 				await send_as(admin1_user, admin1_chat, "/start")
@@ -644,6 +646,7 @@ def test_admin_flow_in_memory() -> None:
 					"проведення студентських подій" in st_pur["a"].get("goal", "")
 				)
 			finally:
+				pet_mod.reset_reviews()
 				config.ADMINS_FILE = old_admins_file
 				config.LAST_USED_FILE = old_last_file
 				bot_mod.router._parent_router = None

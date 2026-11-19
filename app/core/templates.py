@@ -13,6 +13,7 @@ from app.config import (
 	BUILDINGS,
 	EQUIP_ITEMS,
 	EQUIP_PLACES,
+	INSTITUTE_TITLES,
 	INSTITUTES,
 	PLACE_WHERE,
 	PROSVITA,
@@ -41,6 +42,11 @@ _AUD_COMMA_RE = re.compile(r"\s*,\s*")
 _AUD_SPLIT_RE = re.compile(r"[,;]+|\s+(?:та|і|й)\s+")
 _AUD_RANGE_RE = re.compile(r"^\d+[A-Za-zА-ЯІЇЄҐа-яіїєґ]?\s*[-–]\s*\d+")
 _STUDENT_GROUP_RE = re.compile(r",?\s+([A-Za-zА-ЯІЇЄҐа-яіїєґ]{1,6}[-‑]\d{1,3})$")
+_INTERACTIVE_BOARD_RE = re.compile(r"інтерактивн\w*\s+дошк", re.IGNORECASE)
+
+
+def is_interactive_board(text: Any) -> bool:
+	return bool(_INTERACTIVE_BOARD_RE.search(str(text or "")))
 
 
 @dataclass
@@ -853,23 +859,30 @@ def addressee_key(tpl: Template, a: Answers) -> str:
 			return "studmistechko"
 		if _sport_extra_inv(a):
 			return "fizvykhovannia"
-	if tpl.id == "equipment" and "L.I.S." in str(a.get("place", "")):
-		return "erdt"
+	if tpl.id == "equipment":
+		if is_interactive_board(a.get("items")):
+			return "lohoida"
+		if "L.I.S." in str(a.get("place", "")):
+			return "erdt"
 	return tpl.addressees[0]
 
 
 def addressee_lines(tpl: Template, a: Answers) -> list[str]:
 	key = addressee_key(tpl, a)
 	if key == "institute":
-		name, who = INSTITUTES[a["inst"]]
-		return ["Директору", name, *UNIVERSITY, who]
+		code = a["inst"]
+		name, who = INSTITUTES[code]
+		title = INSTITUTE_TITLES.get(code, "Директору")
+		return [title, name, *UNIVERSITY, who]
 	return ADDRESSEES[key][1]
 
 
 def signers_for(tpl: Template, a: Answers) -> list[str]:
 	s = list(tpl.signers)
-	# Приміщення простору L.I.S. додатково погоджує керівник центру тьюторства.
-	if tpl.id == "rooms" and "L.I.S." in str(a.get("what", "")):
+	# Приміщення простору L.I.S. та інтерактивну дошку додатково погоджує керівник центру тьюторства.
+	if (tpl.id == "rooms" and "L.I.S." in str(a.get("what", ""))) or (
+		tpl.id == "equipment" and is_interactive_board(a.get("items"))
+	):
 		s.append("tutor")
 	return s
 
@@ -887,7 +900,9 @@ def visible_steps(tpl: Template, a: Answers) -> list[Step]:
 
 def addressee_label(key: str) -> str:
 	return (
-		"Директору інституту (як у списку)" if key == "institute" else ADDRESSEES[key][0]
+		"Директору / директорці інституту (як у списку)"
+		if key == "institute"
+		else ADDRESSEES[key][0]
 	)
 
 

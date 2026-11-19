@@ -8,14 +8,14 @@ from contextlib import suppress
 from datetime import date
 from typing import Any
 
-from aiogram import Bot, F
-from aiogram.exceptions import AiogramError, TelegramBadRequest
+from aiogram import F
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
-from aiogram.methods import SendDocument
-from aiogram.types import BufferedInputFile, CallbackQuery, Message, User
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app import config
+from app.bot.handlers.petitions import notify_admins
 from app.bot.handlers.responsibles import (
 	ask_resp,
 	handle_resp_text,
@@ -487,38 +487,6 @@ async def edit_step(c: CallbackQuery, state: FSMContext) -> None:
 		await ask(c.message, state, c.from_user.id)
 
 
-async def _notify_admins(
-	bot: Bot | None, creator: User, data: bytes, filename: str, tpl_id: str, count: int
-) -> int:
-	if bot is None:
-		return 0
-	recipients = sorted(config.all_admin_ids() - {creator.id})
-	if not recipients:
-		return 0
-	name_part = html.escape(creator.full_name or str(creator.id))
-	user_part = f" (@{html.escape(creator.username)})" if creator.username else ""
-	author = f"{name_part}{user_part} [ID: <code>{creator.id}</code>]"
-	tpl_title = html.escape(TEMPLATES[tpl_id].title)
-	if count == 1:
-		caption = f"📥 <b>Нове клопотання</b>\n👤 Від: {author}\n📄 Тип: {tpl_title}"
-	else:
-		caption = f"📥 <b>Нові клопотання</b> ({count} шт.)\n👤 Від: {author}\n📄 Останній тип: {tpl_title}"
-	sent = 0
-	for admin_uid in recipients:
-		try:
-			await bot(
-				SendDocument(
-					chat_id=admin_uid,
-					document=BufferedInputFile(data, filename),
-					caption=caption,
-				)
-			)
-			sent += 1
-		except (AiogramError, OSError) as exc:
-			logger.warning("Failed to notify admin %s: %s", admin_uid, exc)
-	return sent
-
-
 @router.callback_query(Form.confirm, F.data == "make")
 async def make(c: CallbackQuery, state: FSMContext) -> None:
 	d = await state.get_data()
@@ -527,7 +495,7 @@ async def make(c: CallbackQuery, state: FSMContext) -> None:
 		save_last(c.from_user.id, d["a"]["responsible"], d["a"].get("_resp_n", 2))
 	data = build_docx(specs)
 	name = f"Клопотання_{date.today():%d-%m-%Y}.docx"
-	sent_admins = await _notify_admins(
+	sent_admins = await notify_admins(
 		c.bot, c.from_user, data, name, d["tpl"], len(specs)
 	)
 	caption = f"Готово ✅ ({len(specs)} шт.)" + (

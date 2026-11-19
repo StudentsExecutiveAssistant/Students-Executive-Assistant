@@ -19,6 +19,7 @@ from app.core.cleaners import (
 	normalize_plates,
 )
 from app.core.dates import MONTHS
+from app.core.templates import is_interactive_board
 
 Issue = tuple[str, str]
 ICON = {"err": "❌", "warn": "⚠️", "info": "ℹ️"}
@@ -86,7 +87,7 @@ DATE_RE = re.compile(
 )
 _SURNAME_WORDS_RE = re.compile(r"[А-ЯІЇЄҐ’ʼ'-]{3,}")
 HEAD_START = re.compile(
-	r"^\s*(проректору|ректору|директору|головному|завідувачу|голові|в\.?\s*о\.?\s+керівника)",
+	r"^\s*(проректору|ректору|директору|директорці|головному|завідувачу|голові|в\.?\s*о\.?\s+керівника)",
 	re.IGNORECASE,
 )
 _PETITION_HEADING_RE = re.compile(r"^\s*\*{0,2}клопотання\*{0,2}\s*$", re.IGNORECASE)
@@ -394,7 +395,7 @@ def check_docx(data: bytes, today: date | None = None) -> list[str]:
 		expected_signers = [config.SIGNERS["profkom"][1].split()[-1]]
 		if "помісячно" not in joined.lower():
 			expected_signers.append(config.SIGNERS["kolehiia"][1].split()[-1])
-		if "L.I.S." in joined:
+		if "L.I.S." in joined or is_interactive_board(joined):
 			expected_signers.append(config.SIGNERS["tutor"][1].split()[-1])
 		for n in expected_signers:
 			if n not in joined and all_text.count(n) < len(blocks):

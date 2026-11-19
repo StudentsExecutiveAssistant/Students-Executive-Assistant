@@ -36,8 +36,17 @@ def cats_kb() -> InlineKeyboardBuilder:
 	return b
 
 
+def _feedback_row() -> InlineKeyboardBuilder:
+	b = InlineKeyboardBuilder()
+	b.button(text="💬 Фідбек", callback_data="fb:new")
+	b.adjust(1)
+	return b
+
+
 def main_menu() -> InlineKeyboardMarkup:
-	return cats_kb().as_markup()
+	b = cats_kb()
+	b.attach(_feedback_row())
+	return b.as_markup()
 
 
 def post_make_menu(tpl_id: str) -> InlineKeyboardMarkup:
@@ -45,6 +54,7 @@ def post_make_menu(tpl_id: str) -> InlineKeyboardMarkup:
 	b.button(text="🔁 Таке саме клопотання", callback_data=f"tpl:{tpl_id}")
 	b.adjust(1)
 	b.attach(cats_kb())
+	b.attach(_feedback_row())
 	return b.as_markup()
 
 

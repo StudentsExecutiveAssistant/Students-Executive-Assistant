@@ -15,6 +15,7 @@ from tests.helpers import (
 	BEST_DATE,
 	BEST_REASON,
 	REF_TODAY,
+	STUDS_IARD_4,
 	STUDS_IBIB_4,
 	STUDS_IKNI_37,
 	STUDS_IKTA_21,
@@ -726,3 +727,58 @@ def test_audience_weekdays_and_purchase_fund_in_memory() -> None:
 		}
 	)
 	assert "Благодійного фонду" not in non_fund_paras[0]["t"]
+
+
+def test_female_director_titles_in_memory() -> None:
+	female_insts = {"ІАРД", "ІГСН", "ІПМТ"}
+	for code in config.INSTITUTES:
+		expected = "Директорці" if code in female_insts else "Директору"
+		assert config.INSTITUTE_TITLES[code] == expected, code
+		a = absence_answers(code, STUDS_IARD_4, in_appendix="У тексті (на одному аркуші)")
+		spec = make_spec("absence", a)
+		assert spec["addressee"][0] == expected, (code, spec["addressee"])
+		if code in female_insts or code == "ІБІБ":
+			data = builder.build_docx([spec])
+			assert_clean_check("absence", a, spec, data)
+			doc = Document(BytesIO(data))
+			assert any(p.text == expected for p in doc.paragraphs), code
+
+
+def test_interactive_board_addressee_and_signer_in_memory() -> None:
+	date_in = "26.11.2026"
+	time_in = "15:00-18:00"
+	base: dict[str, Any] = {
+		"items": "інтерактивної дошки",
+		"date": dates.format_dates(date_in),
+		"_dates": [[s.isoformat(), e.isoformat()] for s, e in dates.parse_dates(date_in)],
+		"time": dates.format_time(time_in),
+		"_time": list(dates.parse_time(time_in)),
+		"purpose": "проведення воркшопу",
+		"responsible": "Голова проєктного відділу Колегії та профкому студентів та аспірантів – Гладчук Святослав",
+		"_resp_n": 1,
+	}
+	for place in (
+		None,
+		"в актовій залі навчального корпусу №1",
+		"в приміщенні студентського простору «L.I.S.» навчального корпусу №1",
+	):
+		a = {**base, **({"place": place} if place else {})}
+		spec = make_spec("equipment", a)
+		assert spec["addressee"] == config.ADDRESSEES["lohoida"][1], place
+		assert spec["signers"] == ["profkom", "kolehiia", "tutor"], place
+		data = builder.build_docx([spec])
+		assert_clean_check("equipment", a, spec, data)
+		doc = Document(BytesIO(data))
+		texts = [p.text for p in doc.paragraphs]
+		assert "Миколі ЛОГОЙДІ" in texts
+		assert any("Наталія ЕРДТ" in t for t in texts)
+
+	# Звичайна техніка в просторі L.I.S. (не інтерактивна дошка) надалі адресується ЕРДТ без дублю в підписах.
+	lis_sound = {
+		**base,
+		"items": "звукового супроводу",
+		"place": "в приміщенні студентського простору «L.I.S.» навчального корпусу №1",
+	}
+	lis_spec = make_spec("equipment", lis_sound)
+	assert lis_spec["addressee"] == config.ADDRESSEES["erdt"][1]
+	assert lis_spec["signers"] == ["profkom", "kolehiia"]
