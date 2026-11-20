@@ -510,7 +510,6 @@ def test_sport_inventory_in_memory() -> None:
 	]
 	assert_clean_check("sport", a, spec, builder.build_docx([spec]))
 
-	# Якщо для залу обрано додатковий інвентар, адресатом лишається завкафедри фізвиховання.
 	hall_a: dict[str, Any] = {
 		**a,
 		"what": templates.SPORT[0],
@@ -773,7 +772,6 @@ def test_interactive_board_addressee_and_signer_in_memory() -> None:
 		assert "Миколі ЛОГОЙДІ" in texts
 		assert any("Наталія ЕРДТ" in t for t in texts)
 
-	# Звичайна техніка в просторі L.I.S. (не інтерактивна дошка) надалі адресується ЕРДТ без дублю в підписах.
 	lis_sound = {
 		**base,
 		"items": "звукового супроводу",

@@ -344,7 +344,6 @@ async def pet_print_cb(c: CallbackQuery) -> None:
 		)
 		return
 
-	# Видаляємо запис синхронно до першого await, щоб уникнути повторної обробки.
 	_REVIEWS.pop(review_id, None)
 	actor_label = _admin_label_html(c.from_user)
 	delivered = False
@@ -415,7 +414,6 @@ async def pet_reject_cb(c: CallbackQuery, state: FSMContext) -> None:
 		)
 		return
 
-	# Закріплюємо відмову синхронно до першого await, щоб уникнути гонки між адмінами.
 	review.rejecting_by = c.from_user.id
 	review.rejecting_by_label = _admin_label_html(c.from_user)
 

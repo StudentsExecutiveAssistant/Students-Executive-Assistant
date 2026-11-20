@@ -156,7 +156,6 @@ def test_feedback_flow_in_memory() -> None:
 				assert cb_data(last_rendered_for(admin1_uid)) == [f"fb:take:{tid1}"]
 				assert cb_data(last_rendered_for(admin2_uid)) == [f"fb:take:{tid1}"]
 				assert "шаблон для гуртожитку" in (last_rendered_for(admin1_uid).text or "")
-				# Перевіряємо, що фідбеки живуть лише в RAM і не пишуться на диск.
 				assert list(Path(tmp).iterdir()) == [config.ADMINS_FILE]
 
 				await tap_as(stud_user, stud_chat, f"fb:take:{tid1}", 1)
@@ -248,7 +247,6 @@ def test_feedback_flow_in_memory() -> None:
 				assert "Максим" in (last_rendered_for(admin1_uid).text or "")
 				assert "✅" in (last_rendered_for(admin2_uid).text or "")
 
-				# Одноразова відповідь: наступне повідомлення адміна не має пересилатися студенту.
 				before_extra = len(session.calls)
 				await send_as(admin2_user, admin2_chat, "Ще одне повідомлення")
 				extra_stud_msgs = [

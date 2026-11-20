@@ -144,7 +144,6 @@ def test_text_issues_diagnostics() -> None:
 	assert "Немає шапки" not in eq_lis_rep and "ЕРДТ" not in eq_lis_rep, eq_lis_rep
 	assert "❌" not in eq_lis_rep and "⚠️" not in eq_lis_rep, eq_lis_rep
 
-	# Інтерактивна дошка без підпису ЕРДТ має попереджати про відсутній підпис.
 	board_spec = make_spec(
 		"equipment",
 		{
@@ -165,7 +164,6 @@ def test_text_issues_diagnostics() -> None:
 	)
 	assert "Не бачу підпису з прізвищем ЕРДТ" in board_rep, board_rep
 
-	# Інтерактивні стійки не повинні вимагати підпис ЕРДТ.
 	stands_spec = make_spec(
 		"placing",
 		{
@@ -185,7 +183,6 @@ def test_text_issues_diagnostics() -> None:
 	)
 	assert "ЕРДТ" not in stands_rep, stands_rep
 
-	# Шапка з «Директорці» розпізнається коректно.
 	iard_spec = make_spec(
 		"absence",
 		absence_answers("ІАРД", STUDS_IARD_4, in_appendix="У тексті (на одному аркуші)"),

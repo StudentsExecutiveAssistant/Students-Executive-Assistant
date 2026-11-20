@@ -369,7 +369,6 @@ async def fb_take_cb(c: CallbackQuery, state: FSMContext) -> None:
 		)
 		return
 
-	# Позначаємо тікет синхронно до першого await, щоб уникнути гонки між адмінами.
 	ticket.claimed_by = c.from_user.id
 	ticket.claimed_by_label = _admin_label_html(c.from_user)
 
@@ -437,7 +436,6 @@ async def on_feedback_reply_text(m: Message, state: FSMContext) -> None:
 		)
 		return
 
-	# Видаляємо тікет до await, щоб повторне повідомлення адміна не дублювало відповідь.
 	_TICKETS.pop(ticket.ticket_id, None)
 	await state.clear()
 

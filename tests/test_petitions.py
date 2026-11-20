@@ -141,7 +141,6 @@ def test_petition_review_buttons_flow_in_memory() -> None:
 			try:
 				pet_mod.reset_reviews()
 
-				# 1. Створення клопотання: адміни отримують документ із кнопками «Надруковано» і «Відмовлено».
 				before_docs = len(session.calls)
 				rev1 = await create_petition()
 				rid1 = rev1.review_id
@@ -158,12 +157,10 @@ def test_petition_review_buttons_flow_in_memory() -> None:
 						f"pet:reject:{rid1}",
 					]
 
-				# Не-адмін не може натискати кнопки.
 				await tap_as(stud_user, stud_chat, f"pet:print:{rid1}", 1)
 				assert "Доступно лише адміністраторам" in (last_answer().text or "")
 				assert rid1 in pet_mod._REVIEWS
 
-				# 2. Адмін 1 тисне «Надруковано»: автора сповіщено, підписи в обох адмінів оновлено, кнопки знято.
 				before_print = len(session.calls)
 				await tap_as(
 					admin1_user,
@@ -189,7 +186,6 @@ def test_petition_review_buttons_flow_in_memory() -> None:
 					and cb_data(e2) == []
 				)
 
-				# Повторне натискання іншим адміном не дублює сповіщення.
 				await tap_as(
 					admin2_user,
 					admin2_chat,
@@ -198,7 +194,6 @@ def test_petition_review_buttons_flow_in_memory() -> None:
 				)
 				assert "вже оброблено" in (last_answer().text or "")
 
-				# 3. Відмова: блокування, скасування кнопкою «Скасувати», потім відмова з довгою причиною.
 				rev2 = await create_petition()
 				rid2 = rev2.review_id
 				await tap_as(
@@ -215,7 +210,6 @@ def test_petition_review_buttons_flow_in_memory() -> None:
 				assert cb_data(rej_e2) == []
 				assert "Оформлює відмову" in (rej_e2.caption or "")
 
-				# Інший адмін не може ані надрукувати, ані відхилити, поки адмін 1 оформлює відмову.
 				await tap_as(
 					admin2_user,
 					admin2_chat,
@@ -224,11 +218,9 @@ def test_petition_review_buttons_flow_in_memory() -> None:
 				)
 				assert "оформлює відмову" in (last_answer().text or "")
 
-				# Адмін 1 не може почати фідбек під час оформлення відмови.
 				await tap_as(admin1_user, admin1_chat, "fb:new", 50)
 				assert "завершіть або скасуйте відмову" in (last_answer().text or "")
 
-				# Скасування кнопкою «Скасувати» повертає кнопки обом адмінам.
 				await tap_as(
 					admin1_user,
 					admin1_chat,
@@ -244,7 +236,6 @@ def test_petition_review_buttons_flow_in_memory() -> None:
 					last_caption_edit(admin2_uid, rev2.admin_messages[admin2_uid])
 				) == [f"pet:print:{rid2}", f"pet:reject:{rid2}"]
 
-				# Адмін 2 бере відмову і вводить довгу причину (>300 символів).
 				await tap_as(
 					admin2_user,
 					admin2_chat,
@@ -274,7 +265,6 @@ def test_petition_review_buttons_flow_in_memory() -> None:
 				assert "…" in (done_e1.caption or "")
 				assert cb_data(done_e1) == [] and cb_data(done_e2) == []
 
-				# 4. Відмова без причини кнопкою «Надіслати без причини».
 				rev3 = await create_petition()
 				rid3 = rev3.review_id
 				await tap_as(
@@ -301,7 +291,6 @@ def test_petition_review_buttons_flow_in_memory() -> None:
 				assert "У клопотанні відмовлено" in nr_msgs[0].text
 				assert "Причина:" not in nr_msgs[0].text
 
-				# 5. Звільнення блокування через /cancel та при видаленні адміна.
 				rev4 = await create_petition()
 				rid4 = rev4.review_id
 				await tap_as(

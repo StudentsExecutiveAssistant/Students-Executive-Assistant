@@ -607,7 +607,6 @@ def test_admin_flow_in_memory() -> None:
 				assert config.all_admin_ids() == {admin1_uid}
 				assert "єдиного адміністратора" in (last_answer().text or "")
 
-				# Порожній admins.json має закривати доступ (fail-closed).
 				Path(config.ADMINS_FILE).write_text('{"admins": []}', encoding="utf-8")
 				assert config.is_admin(admin1_uid) is False
 				assert config.is_admin(None) is False
